@@ -5,23 +5,28 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
 
-    // walidacja
-    if (!email || !password) {
-      setError('Wypełnij wszystkie pola!');
-      return;
-    }
+  try {
+    const response = await fetch('http://localhost:5000/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
 
-    // symulacja autoryzacji (potem zastapimy to zapytaniem do nodea i on sprawdzi z baza czy sie zgadza)
-    if (email === 'admin@edu.p.lodz.pl' && password === 'admin') {
-      onLogin({ email, name: 'Użytkownik' });
+    const data = await response.json();
+
+    if (response.ok) {
+      onLogin(data.user); // Wpuszczamy użytkownika na Dashboard!
     } else {
-      setError('Błąd danych');
+      setError(data.message); // Wyświetlamy błąd z bazy danych
     }
-  };
+  } catch (err) {
+    setError('Błąd połączenia z serwerem');
+  }
+};
 
   return (
     <div className="max-w-md mx-auto mt-20 bg-white p-8 rounded-xl shadow-md">
