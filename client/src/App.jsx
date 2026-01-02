@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import Register from './components/Register'; // 1. Musisz zaimportować nowy komponent
 import './App.css'
 
 function App() {
   // stan sesji
-  const [user, setUser] = useState(0)
+  const [user, setUser] = useState(null);
 
-  // sprawdzanie czy przed odswiezeniem strony uzytkownik byl zalogowany(zabezpieczenie przed tym ze jak juz sie zalogujemy i odswiezymy to
-  // zeby byl dashboard odrazu a nie ze trzeba logowac sie jeszcze raz)
+  // informacja czy pokazujemy ekran rejestracji
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // sprawdzanie sesji przy starcie
   useEffect(() => {
     const savedUser = localStorage.getItem('pm_session');
     if(savedUser){
@@ -16,7 +19,7 @@ function App() {
     }
   }, []);
 
-  // funkcja logowania
+  // funkcja logowania (i rejestracji)
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem('pm_session', JSON.stringify(userData));
@@ -27,14 +30,24 @@ function App() {
     setUser(null);
     localStorage.removeItem('pm_session');
   };
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       {user ? (
-        // sesja aktywna wyswietlamy dashboard 
+        // sesja aktywna - wyswietlamy dashboard
         <Dashboard user={user} onLogout={handleLogout} />
+      ) : isRegistering ? (
+        // jesli nie zalogowany i kliknieto rejestracje
+        <Register 
+          onRegister={handleLogin} 
+          onSwitchToLogin={() => setIsRegistering(false)} 
+        />
       ) : (
-        // sesja nieaktywna wyswietlamy ekran logowania
-        <Login onLogin = {handleLogin} />
+        // sesja nieaktywna - ekran logowania
+        <Login 
+          onLogin={handleLogin} 
+          onSwitchToRegister={() => setIsRegistering(true)} // przejscie do rejestracji
+        />
       )}
     </div>
   );
