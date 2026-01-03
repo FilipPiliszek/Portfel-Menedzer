@@ -1,5 +1,14 @@
-const pool = require('./db');
+const express = require('express');
+const cors = require('cors');
+const pool = require('./db'); // połączenie z bazą danych
 const bcrypt = require('bcrypt');
+require('dotenv').config();
+
+const app = express();
+
+// Middleware - niezbędne, żeby serwer rozumiał dane JSON i pozwalał na połączenie z Reactem
+app.use(cors());
+app.use(express.json());
 
 // ENDPOINT LOGOWANIA
 app.post('/api/login', async (req, res) => {
@@ -34,8 +43,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-const bcrypt = require('bcrypt');
-
 // ENDPOINT REJESTRACJI
 app.post('/api/register', async (req, res) => {
   const { username, email, password } = req.body;
@@ -47,7 +54,7 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ message: "Użytkownik o tym adresie email już istnieje" });
     }
 
-    // Szyfrujemy hasło (dobra praktyka - 10 rund solenia)
+    // Szyfrujemy hasło
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -62,4 +69,10 @@ app.post('/api/register', async (req, res) => {
     console.error(err.message);
     res.status(500).send("Błąd serwera przy rejestracji");
   }
+});
+
+// URUCHOMIENIE SERWERA
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Serwer Portfel Menedżer działa na porcie ${PORT}`);
 });
