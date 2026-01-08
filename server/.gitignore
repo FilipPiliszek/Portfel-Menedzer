@@ -1,0 +1,23 @@
+# Logi i błędy
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Zależności (Tego pod żadnym pozorem nie wysyłamy!)
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Pliki konfiguracyjne z hasłami (KLUCZOWE!)
+.env
+server/.env
+client/.env
+
+# Buildy i skompilowane pliki
+dist/
+build/
+
+# Pliki systemowe i edytora
+.vscode/
+.DS_Store
+Thumbs.db
