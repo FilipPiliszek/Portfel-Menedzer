@@ -71,6 +71,158 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// ENDPOINTY KATEGORII
+// Pobieranie kategorii użytkownika
+app.get('/api/categories/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const categories = await pool.query(
+      'SELECT id, name, budget_limit FROM categories WHERE user_id = $1 ORDER BY name',
+      [userId]
+    );
+    res.json(categories.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
+// Dodawanie nowej kategorii
+app.post('/api/categories', async (req, res) => {
+  const { userId, name, budgetLimit } = req.body;
+
+  try {
+    const limit = Math.max(0, parseFloat(budgetLimit) || 0); // Zapewniamy, że limit nie jest ujemny
+    const newCategory = await pool.query(
+      'INSERT INTO categories (user_id, name, budget_limit) VALUES ($1, $2, $3) RETURNING id, name, budget_limit',
+      [userId, name.trim(), limit]
+    );
+    res.json(newCategory.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
+// Aktualizacja kategorii (w tym limitu budżetowego)
+app.put('/api/categories/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, budgetLimit } = req.body;
+
+  try {
+    const limit = Math.max(0, parseFloat(budgetLimit) || 0); // Zapewniamy, że limit nie jest ujemny
+    const updatedCategory = await pool.query(
+      'UPDATE categories SET name = $1, budget_limit = $2 WHERE id = $3 RETURNING id, name, budget_limit',
+      [name.trim(), limit, id]
+    );
+    res.json(updatedCategory.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
+// Usuwanie kategorii
+app.delete('/api/categories/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query('DELETE FROM categories WHERE id = $1', [id]);
+    res.json({ message: "Kategoria usunięta" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
+// ENDPOINTY TRANSAKCJI
+// Pobieranie transakcji użytkownika
+app.get('/api/transactions/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const transactions = await pool.query(
+      `SELECT t.id, t.amount, t.description, t.date, c.name as category_name, c.id as category_id
+       FROM transactions t
+       LEFT JOIN categories c ON t.category_id = c.id
+       WHERE t.user_id = $1
+       ORDER BY t.date DESC, t.created_at DESC`,
+      [userId]
+    );
+    res.json(transactions.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
+// Dodawanie nowej transakcji
+app.post('/api/transactions', async (req, res) => {
+  const { userId, categoryId, amount, description } = req.body;
+
+  try {
+    // Sprawdzamy aktualne wydatki w kategorii
+    const spendingQuery = await pool.query(
+      'SELECT COALESCE(SUM(amount), 0) as total_spent FROM transactions WHERE user_id = $1 AND category_id = $2',
+      [userId, categoryId]
+    );
+    const totalSpent = parseFloat(spendingQuery.rows[0].total_spent);
+
+    // Sprawdzamy limit kategorii
+    const categoryQuery = await pool.query(
+      'SELECT budget_limit FROM categories WHERE id = $1',
+      [categoryId]
+    );
+    const budgetLimit = Math.max(0, parseFloat(categoryQuery.rows[0]?.budget_limit || 0)); // Zapewniamy nieujemny limit
+
+    const newTotal = totalSpent + parseFloat(amount);
+
+    if (budgetLimit > 0 && newTotal > budgetLimit) {
+      return res.status(400).json({
+        message: `Przekroczenie limitu kategorii! Limit: ${budgetLimit} zł, aktualne wydatki: ${totalSpent} zł, po dodaniu: ${newTotal} zł`
+      });
+    }
+
+    // Dodajemy transakcję
+    const newTransaction = await pool.query(
+      'INSERT INTO transactions (user_id, category_id, amount, description) VALUES ($1, $2, $3, $4) RETURNING id, amount, description, date',
+      [userId, categoryId, parseFloat(amount), description]
+    );
+
+    res.json({
+      ...newTransaction.rows[0],
+      remaining: budgetLimit > 0 ? budgetLimit - newTotal : null
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
+// Pobieranie podsumowania wydatków po kategoriach
+app.get('/api/spending-summary/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const summary = await pool.query(
+      `SELECT c.id, c.name, GREATEST(0, c.budget_limit) as budget_limit,
+              COALESCE(SUM(t.amount), 0) as total_spent,
+              CASE WHEN GREATEST(0, c.budget_limit) > 0 THEN GREATEST(0, c.budget_limit) - COALESCE(SUM(t.amount), 0) ELSE NULL END as remaining
+       FROM categories c
+       LEFT JOIN transactions t ON c.id = t.category_id AND t.user_id = $1
+       WHERE c.user_id = $1
+       GROUP BY c.id, c.name, c.budget_limit
+       ORDER BY c.name`,
+      [userId]
+    );
+    res.json(summary.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
 // URUCHOMIENIE SERWERA
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
