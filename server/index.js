@@ -73,6 +73,84 @@ app.post('/api/register', async (req, res) => {
 
 // URUCHOMIENIE SERWERA
 const PORT = process.env.PORT || 5000;
+
+// endpoint do dodawania transakcji z weryfikacja limitu miesiecznego
+app.post('/api/transactions', async (req, res) => {
+  const { user_id, amount, category, description } = req.body;
+  const numericAmount = parseFloat(amount);
+
+  try {
+    // sprawdz kategorie, jej id oraz limit ustawiony przez uzytkownika 
+    const categoryRes = await pool.query(
+      'SELECT id, budget_limit FROM categories WHERE user_id = $1 AND name = $2',
+      [user_id, category]
+    );
+
+    let overLimit = false;
+
+    if (categoryRes.rows.length > 0) {
+      const categoryId = categoryRes.rows[0].id;
+      const limit = parseFloat(categoryRes.rows[0].budget_limit);
+
+      // suma wydatkow z biezacego miesiaca dla tej kategorii (od 1 dnia miesiaca!)
+      const sumRes = await pool.query(
+        `SELECT SUM(amount) as total FROM transactions 
+         WHERE user_id = $1 
+         AND category_id = $2 
+         AND date >= date_trunc('month', CURRENT_DATE)`,
+        [user_id, categoryId]
+      );
+
+      const currentMonthSum = parseFloat(sumRes.rows[0].total || 0);
+
+      // czy przekroczy limit?
+      if (limit > 0 && (currentMonthSum + numericAmount) > limit) {
+        overLimit = true;
+      }
+
+      // zapis transakcji
+      const newTransaction = await pool.query(
+        'INSERT INTO transactions (user_id, category_id, amount, description, date) VALUES ($1, $2, $3, $4, CURRENT_DATE) RETURNING *',
+        [user_id, categoryId, numericAmount, description || `Wydatek: ${category}`]
+      );
+
+      res.json({ 
+        success: true, 
+        transaction: newTransaction.rows[0],
+        overLimit: overLimit,
+        currentSum: currentMonthSum + numericAmount,
+        limit: limit
+      });
+
+    } else {
+      const newTransaction = await pool.query(
+        'INSERT INTO transactions (user_id, amount, description, date) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *',
+        [user_id, numericAmount, description || `Wydatek: ${category}`]
+      );
+      res.json({ success: true, transaction: newTransaction.rows[0], overLimit: false });
+    }
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera przy zapisie transakcji");
+  }
+});
+
+// endpoint do pobierania transakcji uzytkownika
+app.get('/api/transactions/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const transactions = await pool.query(
+      'SELECT t.*, c.name as category_name FROM transactions t LEFT JOIN categories c ON t.category_id = c.id WHERE t.user_id = $1 ORDER BY t.date DESC',
+      [userId]
+    );
+    res.json(transactions.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera przy pobieraniu transakcji");
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`Serwer Portfel Menedżer działa na porcie ${PORT}`);
 });
