@@ -5,52 +5,15 @@ function Dashboard({ user, onLogout }) {
   const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
   const [alert, setAlert] = useState('');
-  const [categories, setCategories] = useState([]);
-  const [spendingSummary, setSpendingSummary] = useState([]);
   const [transactions, setTransactions] = useState([]);
-  const [showAddCategory, setShowAddCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryLimit, setNewCategoryLimit] = useState('');
 
-  // Pobieranie danych przy montowaniu komponentu
+  // funkcja do pobierania listy z serwera
   useEffect(() => {
-    fetchCategories();
-    fetchSpendingSummary();
-    fetchTransactions();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/categories/${user.id}`);
-      const data = await response.json();
-      setCategories(data);
-      if (data.length > 0 && !categoryId) {
-        setCategoryId(data[0].id);
-      }
-    } catch (error) {
-      console.error('Błąd pobierania kategorii:', error);
-    }
-  };
-
-  const fetchSpendingSummary = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/spending-summary/${user.id}`);
-      const data = await response.json();
-      setSpendingSummary(data);
-    } catch (error) {
-      console.error('Błąd pobierania podsumowania:', error);
-    }
-  };
-
-  const fetchTransactions = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/transactions/${user.id}`);
-      const data = await response.json();
-      setTransactions(data);
-    } catch (error) {
-      console.error('Błąd pobierania transakcji:', error);
-    }
-  };
+    if (user?.id) { // Dobra praktyka: pobieraj tylko gdy mamy ID użytkownika
+      fetchCategories();
+      fetchSpendingSummary();
+      fetchTransactions();
+  }, [user.id]);
 
   const handleAddTransaction = async (e) => {
     e.preventDefault();
@@ -91,7 +54,7 @@ function Dashboard({ user, onLogout }) {
       setAlert('Błąd serwera');
     }
   };
-
+////////////////////////////////
   const handleAddCategory = async (e) => {
     e.preventDefault();
 
@@ -139,6 +102,44 @@ function Dashboard({ user, onLogout }) {
   const getCategoryName = (id) => {
     const category = categories.find(c => c.id === id);
     return category ? category.name : 'Nieznana';
+    try {
+      // dane do backendu
+      const response = await fetch('http://localhost:5000/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id, // ID zalogowanego użytkownika
+          amount: parseFloat(amount),
+          category: category,
+          description: `Wydatek na ${category}`
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // obsluga limitu miesiecznego
+        if (data.overLimit) {
+          setAlert(`PRZEKROCZONO LIMIT! W tym miesiącu na "${category}" wydano już łącznie: ${data.currentSum} zł (Twój limit to: ${data.limit} zł).`);
+        } else {
+          window.alert("Transakcja zapisana pomyślnie!");
+        }
+
+        setAmount('');
+        
+        // odswiezanie listy po dodaniu transakcji
+        fetch(`http://localhost:5000/api/transactions/${user.id}`)
+          .then(res => res.json())
+          .then(data => setTransactions(data));
+
+      } else {
+        setAlert(`Błąd serwera: ${data.message || 'Nie udało się zapisać.'}`);
+      }
+
+    } catch (err) {
+      console.error("Błąd połączenia:", err);
+      setAlert('Błąd połączenia z serwerem. Upewnij się, że backend działa.');
+    }
   };
 
   return (
@@ -283,6 +284,34 @@ function Dashboard({ user, onLogout }) {
               </span>
             </div>
           ))}
+        </div>
+        </div>
+        {/* lista transakcji */}
+      <div className="mt-8 bg-white p-6 rounded shadow">
+        <h2 className="font-bold mb-4 border-b pb-2 text-gray-700">Historia transakcji</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-gray-400 border-b text-sm">
+                <th className="py-2">Data</th>
+                <th className="py-2">Opis / Kategoria</th>
+                <th className="py-2 text-right">Kwota</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.length === 0 ? (
+                <tr><td colSpan="3" className="py-4 text-center text-gray-400">Brak transakcji w tym miesiącu</td></tr>
+              ) : (
+                transactions.map((t) => (
+                  <tr key={t.id} className="border-b text-sm hover:bg-gray-50">
+                    <td className="py-2 text-gray-500">{new Date(t.date).toLocaleDateString()}</td>
+                    <td className="py-2 font-medium">{t.description}</td>
+                    <td className="py-2 text-right font-bold text-red-600">-{t.amount} zł</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
