@@ -136,6 +136,21 @@ app.post('/api/transactions', async (req, res) => {
   }
 });
 
+// endpoint do pobierania transakcji uzytkownika
+app.get('/api/transactions/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const transactions = await pool.query(
+      'SELECT t.*, c.name as category_name FROM transactions t LEFT JOIN categories c ON t.category_id = c.id WHERE t.user_id = $1 ORDER BY t.date DESC',
+      [userId]
+    );
+    res.json(transactions.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera przy pobieraniu transakcji");
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`Serwer Portfel Menedżer działa na porcie ${PORT}`);
 });
