@@ -80,7 +80,7 @@ app.post('/api/register', async (req, res) => {
       );
     }
 
-    res.json({ success: true, user: newUser.rows[0] });
+    res.json({ success: true, user: { id: newUser.rows[0].id, name: newUser.rows[0].username, email: newUser.rows[0].email } });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Błąd serwera przy rejestracji");

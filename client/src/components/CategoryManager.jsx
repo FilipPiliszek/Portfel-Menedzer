@@ -8,7 +8,8 @@ function CategoryManager({
   newCategoryLimit,
   setNewCategoryLimit,
   categories,
-  onAddCategory
+  onAddCategory,
+  onDeleteCategory
 }) {
   return (
     <div className="bg-white p-6 rounded shadow">
@@ -49,10 +50,19 @@ function CategoryManager({
       <div className="space-y-2">
         {categories.map(cat => (
           <div key={cat.id} className="flex justify-between items-center p-2 border rounded">
-            <span>{cat.name}</span>
-            <span className="text-sm text-gray-500">
-              Limit: {cat.budget_limit > 0 ? `${cat.budget_limit} zł` : 'Brak'}
-            </span>
+            <div>
+              <span>{cat.name}</span>
+              <span className="text-sm text-gray-500 ml-2">
+                Limit: {cat.budget_limit > 0 ? `${cat.budget_limit} zł` : 'Brak'}
+              </span>
+            </div>
+            <button
+              onClick={() => onDeleteCategory(cat.id, cat.name)}
+              className="text-red-500 hover:text-red-700 text-sm underline ml-2"
+              title="Usuń kategorię"
+            >
+              Usuń
+            </button>
           </div>
         ))}
       </div>

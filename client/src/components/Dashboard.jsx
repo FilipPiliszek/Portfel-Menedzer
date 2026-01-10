@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import TransactionForm from './TransactionForm';
 import CategoryManager from './CategoryManager';
 import SpendingSummary from './SpendingSummary';
+import ChartsSection from './ChartsSection';
 import TransactionList from './TransactionList';
 
 function Dashboard({ user, onLogout }) {
@@ -23,8 +24,7 @@ function Dashboard({ user, onLogout }) {
     fetchSpendingSummary,
     fetchTransactions,
     addTransaction,
-    addCategory,
-  } = useApi(user?.id);
+    addCategory,    deleteCategory,  } = useApi(user?.id);
 
   // Efekt przy montowaniu komponentu
   useEffect(() => {
@@ -108,6 +108,28 @@ function Dashboard({ user, onLogout }) {
     }
   };
 
+  // Obsługa usuwania kategorii
+  const handleDeleteCategory = async (categoryId, categoryName) => {
+    if (!window.confirm(`Czy na pewno chcesz usunąć kategorię "${categoryName}"? Wszystkie transakcje w tej kategorii zostaną zachowane, ale nie będą przypisane do żadnej kategorii.`)) {
+      return;
+    }
+
+    try {
+      const { response, result } = await deleteCategory(categoryId);
+
+      if (response.ok) {
+        setAlert(`Kategoria "${categoryName}" została usunięta`);
+        fetchCategories();
+        fetchSpendingSummary();
+        fetchTransactions();
+      } else {
+        setAlert(result.message || 'Błąd usuwania kategorii');
+      }
+    } catch (error) {
+      setAlert('Błąd serwera');
+    }
+  };
+
   // Funkcja pomocnicza do pobierania nazwy kategorii
   const getCategoryName = (id) => {
     const category = categories.find(c => c.id === id);
@@ -117,7 +139,7 @@ function Dashboard({ user, onLogout }) {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8 bg-white p-4 rounded shadow">
-        <h1 className="text-xl font-bold">Witaj, {user.name}!</h1>
+        <h1 className="text-xl font-bold">Witaj, {user.username || 'Użytkowniku'}!</h1>
         <button onClick={onLogout} className="text-red-500 underline text-sm">Wyloguj</button>
       </div>
 
@@ -143,10 +165,13 @@ function Dashboard({ user, onLogout }) {
           setNewCategoryLimit={setNewCategoryLimit}
           categories={categories}
           onAddCategory={handleAddCategory}
+          onDeleteCategory={handleDeleteCategory}
         />
       </div>
 
       <SpendingSummary spendingSummary={spendingSummary} />
+
+      <ChartsSection spendingSummary={spendingSummary} transactions={transactions} />
 
       <TransactionList transactions={transactions} getCategoryName={getCategoryName} />
     </div>
