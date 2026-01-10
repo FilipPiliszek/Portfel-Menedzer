@@ -1,131 +1,154 @@
 import React, { useState, useEffect } from 'react';
+import { useApi } from '../hooks/useApi';
+import TransactionForm from './TransactionForm';
+import CategoryManager from './CategoryManager';
+import SpendingSummary from './SpendingSummary';
+import TransactionList from './TransactionList';
 
 function Dashboard({ user, onLogout }) {
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('Jedzenie');
+  const [categoryId, setCategoryId] = useState('');
+  const [description, setDescription] = useState('');
   const [alert, setAlert] = useState('');
-  const [transactions, setTransactions] = useState([]);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryLimit, setNewCategoryLimit] = useState('');
 
-  // funkcja do pobierania listy z serwera
+  const {
+    categories,
+    setCategories,
+    spendingSummary,
+    transactions,
+    fetchCategories,
+    fetchSpendingSummary,
+    fetchTransactions,
+    addTransaction,
+    addCategory,
+  } = useApi(user?.id);
+
+  // Efekt przy montowaniu komponentu
   useEffect(() => {
-    fetch(`http://localhost:5000/api/transactions/${user.id}`)
-      .then(res => res.json())
-      .then(data => setTransactions(data))
-      .catch(err => console.error("Błąd pobierania:", err));
-  }, [user.id]);
+    if (user?.id) {
+      fetchCategories().then(data => {
+        if (data.length > 0 && !categoryId) {
+          setCategoryId(data[0].id);
+        }
+      });
+      fetchSpendingSummary();
+      fetchTransactions();
+    }
+  }, [user?.id]);
 
+  // Obsługa dodawania transakcji
   const handleAddTransaction = async (e) => {
     e.preventDefault();
     setAlert('');
 
-    // walidacja poprawnosci danych
-    if (!amount || amount <= 0) {
-      setAlert('Dane są niekompletne lub kwota jest błędna');
+    if (!amount || amount <= 0 || !categoryId) {
+      setAlert('Wypełnij wszystkie pola poprawnie');
       return;
     }
 
     try {
-      // dane do backendu
-      const response = await fetch('http://localhost:5000/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id, // ID zalogowanego użytkownika
-          amount: parseFloat(amount),
-          category: category,
-          description: `Wydatek na ${category}`
-        })
+      const { response, result } = await addTransaction({
+        userId: user.id,
+        categoryId: parseInt(categoryId),
+        amount: parseFloat(amount),
+        description: description || 'Transakcja'
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        // obsluga limitu miesiecznego
-        if (data.overLimit) {
-          setAlert(`PRZEKROCZONO LIMIT! W tym miesiącu na "${category}" wydano już łącznie: ${data.currentSum} zł (Twój limit to: ${data.limit} zł).`);
-        } else {
-          window.alert("Transakcja zapisana pomyślnie!");
-        }
-
+      if (response.ok) {
+        setAlert('Transakcja dodana pomyślnie!');
         setAmount('');
-        
-        // odswiezanie listy po dodaniu transakcji
-        fetch(`http://localhost:5000/api/transactions/${user.id}`)
-          .then(res => res.json())
-          .then(data => setTransactions(data));
-
+        setDescription('');
+        fetchSpendingSummary();
+        fetchTransactions();
       } else {
-        setAlert(`Błąd serwera: ${data.message || 'Nie udało się zapisać.'}`);
+        setAlert(result.message);
       }
-
-    } catch (err) {
-      console.error("Błąd połączenia:", err);
-      setAlert('Błąd połączenia z serwerem. Upewnij się, że backend działa.');
+    } catch (error) {
+      setAlert('Błąd serwera');
     }
   };
 
+  // Obsługa dodawania kategorii
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+
+    if (!newCategoryName.trim()) {
+      setAlert('Nazwa kategorii jest wymagana');
+      return;
+    }
+
+    const limit = parseFloat(newCategoryLimit);
+    if (newCategoryLimit && (isNaN(limit) || limit < 0)) {
+      setAlert('Limit budżetowy musi być liczbą nieujemną');
+      return;
+    }
+
+    try {
+      const { response, result } = await addCategory({
+        userId: user.id,
+        name: newCategoryName.trim(),
+        budgetLimit: limit || 0
+      });
+
+      if (response.ok) {
+        setNewCategoryName('');
+        setNewCategoryLimit('');
+        setShowAddCategory(false);
+        setAlert('');
+        fetchCategories();
+        fetchSpendingSummary();
+      } else {
+        setAlert(result.message || 'Błąd dodawania kategorii');
+      }
+    } catch (error) {
+      setAlert('Błąd serwera');
+    }
+  };
+
+  // Funkcja pomocnicza do pobierania nazwy kategorii
+  const getCategoryName = (id) => {
+    const category = categories.find(c => c.id === id);
+    return category ? category.name : 'Nieznana';
+  };
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8 bg-white p-4 rounded shadow">
         <h1 className="text-xl font-bold">Witaj, {user.name}!</h1>
         <button onClick={onLogout} className="text-red-500 underline text-sm">Wyloguj</button>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* blok dodawania nowej transakcji */}
-        <div className="bg-white p-6 rounded shadow">
-          <h2 className="font-bold mb-4">Dodaj nową transakcję</h2>
-          {alert && <p className="text-orange-500 text-sm mb-4 font-bold">{alert}</p>}
-          <form onSubmit={handleAddTransaction} className="space-y-4">
-            <input 
-              type="number" placeholder="Kwota" value={amount}
-              className="w-full p-2 border rounded"
-              onChange={(e) => setAmount(e.target.value)}
-            />
-            <select className="w-full p-2 border rounded" onChange={(e) => setCategory(e.target.value)}>
-              <option>Jedzenie</option>
-              <option>Rozrywka</option>
-              <option>Transport</option>
-            </select>
-            <button className="w-full bg-green-600 text-white py-2 rounded">
-              Zapisz transakcję
-            </button>
-          </form>
-        </div>
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        <TransactionForm
+          amount={amount}
+          setAmount={setAmount}
+          categoryId={categoryId}
+          setCategoryId={setCategoryId}
+          description={description}
+          setDescription={setDescription}
+          categories={categories}
+          onSubmit={handleAddTransaction}
+          alert={alert}
+        />
 
-        {/* miejsce na wykresy */}
-        <div className="bg-white p-6 rounded shadow border-dashed border-2 flex items-center justify-center text-gray-400">
-          Tu będą wykresy (Recharts)
-        </div>
-        </div>
-        {/* lista transakcji */}
-      <div className="mt-8 bg-white p-6 rounded shadow">
-        <h2 className="font-bold mb-4 border-b pb-2 text-gray-700">Historia transakcji</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-gray-400 border-b text-sm">
-                <th className="py-2">Data</th>
-                <th className="py-2">Opis / Kategoria</th>
-                <th className="py-2 text-right">Kwota</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.length === 0 ? (
-                <tr><td colSpan="3" className="py-4 text-center text-gray-400">Brak transakcji w tym miesiącu</td></tr>
-              ) : (
-                transactions.map((t) => (
-                  <tr key={t.id} className="border-b text-sm hover:bg-gray-50">
-                    <td className="py-2 text-gray-500">{new Date(t.date).toLocaleDateString()}</td>
-                    <td className="py-2 font-medium">{t.description}</td>
-                    <td className="py-2 text-right font-bold text-red-600">-{t.amount} zł</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <CategoryManager
+          showAddCategory={showAddCategory}
+          setShowAddCategory={setShowAddCategory}
+          newCategoryName={newCategoryName}
+          setNewCategoryName={setNewCategoryName}
+          newCategoryLimit={newCategoryLimit}
+          setNewCategoryLimit={setNewCategoryLimit}
+          categories={categories}
+          onAddCategory={handleAddCategory}
+        />
       </div>
+
+      <SpendingSummary spendingSummary={spendingSummary} />
+
+      <TransactionList transactions={transactions} getCategoryName={getCategoryName} />
     </div>
   );
 }
