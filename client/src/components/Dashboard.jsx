@@ -1,20 +1,45 @@
 import React, { useState, useEffect } from 'react';
+import { useApi } from '../hooks/useApi';
+import TransactionForm from './TransactionForm';
+import CategoryManager from './CategoryManager';
+import SpendingSummary from './SpendingSummary';
+import TransactionList from './TransactionList';
 
 function Dashboard({ user, onLogout }) {
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
   const [alert, setAlert] = useState('');
-  const [transactions, setTransactions] = useState([]);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryLimit, setNewCategoryLimit] = useState('');
 
-  // funkcja do pobierania listy z serwera
+  const {
+    categories,
+    setCategories,
+    spendingSummary,
+    transactions,
+    fetchCategories,
+    fetchSpendingSummary,
+    fetchTransactions,
+    addTransaction,
+    addCategory,
+  } = useApi(user?.id);
+
+  // Efekt przy montowaniu komponentu
   useEffect(() => {
-    if (user?.id) { // Dobra praktyka: pobieraj tylko gdy mamy ID użytkownika
-      fetchCategories();
+    if (user?.id) {
+      fetchCategories().then(data => {
+        if (data.length > 0 && !categoryId) {
+          setCategoryId(data[0].id);
+        }
+      });
       fetchSpendingSummary();
       fetchTransactions();
-  }, [user.id]);
+    }
+  }, [user?.id]);
 
+  // Obsługa dodawania transakcji
   const handleAddTransaction = async (e) => {
     e.preventDefault();
     setAlert('');
@@ -25,20 +50,12 @@ function Dashboard({ user, onLogout }) {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          categoryId: parseInt(categoryId),
-          amount: parseFloat(amount),
-          description: description || 'Transakcja'
-        }),
+      const { response, result } = await addTransaction({
+        userId: user.id,
+        categoryId: parseInt(categoryId),
+        amount: parseFloat(amount),
+        description: description || 'Transakcja'
       });
-
-      const result = await response.json();
 
       if (response.ok) {
         setAlert('Transakcja dodana pomyślnie!');
@@ -50,11 +67,11 @@ function Dashboard({ user, onLogout }) {
         setAlert(result.message);
       }
     } catch (error) {
-      console.error('Błąd dodawania transakcji:', error);
       setAlert('Błąd serwera');
     }
   };
-////////////////////////////////
+
+  // Obsługa dodawania kategorii
   const handleAddCategory = async (e) => {
     e.preventDefault();
 
@@ -70,16 +87,10 @@ function Dashboard({ user, onLogout }) {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/categories', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          name: newCategoryName.trim(),
-          budgetLimit: limit || 0
-        }),
+      const { response, result } = await addCategory({
+        userId: user.id,
+        name: newCategoryName.trim(),
+        budgetLimit: limit || 0
       });
 
       if (response.ok) {
@@ -90,56 +101,17 @@ function Dashboard({ user, onLogout }) {
         fetchCategories();
         fetchSpendingSummary();
       } else {
-        const error = await response.json();
-        setAlert(error.message || 'Błąd dodawania kategorii');
+        setAlert(result.message || 'Błąd dodawania kategorii');
       }
     } catch (error) {
-      console.error('Błąd dodawania kategorii:', error);
       setAlert('Błąd serwera');
     }
   };
 
+  // Funkcja pomocnicza do pobierania nazwy kategorii
   const getCategoryName = (id) => {
     const category = categories.find(c => c.id === id);
     return category ? category.name : 'Nieznana';
-    try {
-      // dane do backendu
-      const response = await fetch('http://localhost:5000/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id, // ID zalogowanego użytkownika
-          amount: parseFloat(amount),
-          category: category,
-          description: `Wydatek na ${category}`
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // obsluga limitu miesiecznego
-        if (data.overLimit) {
-          setAlert(`PRZEKROCZONO LIMIT! W tym miesiącu na "${category}" wydano już łącznie: ${data.currentSum} zł (Twój limit to: ${data.limit} zł).`);
-        } else {
-          window.alert("Transakcja zapisana pomyślnie!");
-        }
-
-        setAmount('');
-        
-        // odswiezanie listy po dodaniu transakcji
-        fetch(`http://localhost:5000/api/transactions/${user.id}`)
-          .then(res => res.json())
-          .then(data => setTransactions(data));
-
-      } else {
-        setAlert(`Błąd serwera: ${data.message || 'Nie udało się zapisać.'}`);
-      }
-
-    } catch (err) {
-      console.error("Błąd połączenia:", err);
-      setAlert('Błąd połączenia z serwerem. Upewnij się, że backend działa.');
-    }
   };
 
   return (
@@ -150,170 +122,33 @@ function Dashboard({ user, onLogout }) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
-        {/* Dodawanie transakcji */}
-        <div className="bg-white p-6 rounded shadow">
-          <h2 className="font-bold mb-4">Dodaj nową transakcję</h2>
-          {alert && (
-            <p className={`text-sm mb-4 font-bold ${alert.includes('pomyślnie') ? 'text-green-500' : 'text-red-500'}`}>
-              {alert}
-            </p>
-          )}
-          <form onSubmit={handleAddTransaction} className="space-y-4">
-            <input
-              type="number"
-              step="0.01"
-              placeholder="Kwota"
-              value={amount}
-              className="w-full p-2 border rounded"
-              onChange={(e) => setAmount(e.target.value)}
-            />
-            <select
-              className="w-full p-2 border rounded"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Opis (opcjonalny)"
-              value={description}
-              className="w-full p-2 border rounded"
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <button className="w-full bg-green-600 text-white py-2 rounded">
-              Zapisz transakcję
-            </button>
-          </form>
-        </div>
+        <TransactionForm
+          amount={amount}
+          setAmount={setAmount}
+          categoryId={categoryId}
+          setCategoryId={setCategoryId}
+          description={description}
+          setDescription={setDescription}
+          categories={categories}
+          onSubmit={handleAddTransaction}
+          alert={alert}
+        />
 
-        {/* Dodawanie kategorii */}
-        <div className="bg-white p-6 rounded shadow">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-bold">Zarządzanie kategoriami</h2>
-            <button
-              onClick={() => setShowAddCategory(!showAddCategory)}
-              className="text-blue-500 underline text-sm"
-            >
-              {showAddCategory ? 'Anuluj' : '+ Dodaj kategorię'}
-            </button>
-          </div>
-
-          {showAddCategory && (
-            <form onSubmit={handleAddCategory} className="space-y-4 mb-4 p-4 bg-gray-50 rounded">
-              <input
-                type="text"
-                placeholder="Nazwa kategorii"
-                value={newCategoryName}
-                className="w-full p-2 border rounded"
-                onChange={(e) => setNewCategoryName(e.target.value)}
-              />
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Limit budżetowy (opcjonalny)"
-                value={newCategoryLimit}
-                className="w-full p-2 border rounded"
-                onChange={(e) => setNewCategoryLimit(e.target.value)}
-              />
-              <button className="w-full bg-blue-600 text-white py-2 rounded">
-                Dodaj kategorię
-              </button>
-            </form>
-          )}
-
-          <div className="space-y-2">
-            {categories.map(cat => (
-              <div key={cat.id} className="flex justify-between items-center p-2 border rounded">
-                <span>{cat.name}</span>
-                <span className="text-sm text-gray-500">
-                  Limit: {cat.budget_limit > 0 ? `${cat.budget_limit} zł` : 'Brak'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CategoryManager
+          showAddCategory={showAddCategory}
+          setShowAddCategory={setShowAddCategory}
+          newCategoryName={newCategoryName}
+          setNewCategoryName={setNewCategoryName}
+          newCategoryLimit={newCategoryLimit}
+          setNewCategoryLimit={setNewCategoryLimit}
+          categories={categories}
+          onAddCategory={handleAddCategory}
+        />
       </div>
 
-      {/* Podsumowanie wydatków */}
-      <div className="bg-white p-6 rounded shadow mb-6">
-        <h2 className="font-bold mb-4">Podsumowanie wydatków</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {spendingSummary.map(cat => (
-            <div key={cat.id} className="p-4 border rounded">
-              <h3 className="font-semibold">{cat.name}</h3>
-              <p className="text-sm text-gray-600">Wydano: {cat.total_spent} zł</p>
-              {cat.budget_limit > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm">Limit: {cat.budget_limit} zł</p>
-                  <p className={`text-sm font-semibold ${cat.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    Pozostało: {cat.remaining >= 0 ? cat.remaining : Math.abs(cat.remaining)} zł
-                    {cat.remaining < 0 && ' (PRZEKROCZONY!)'}
-                  </p>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div
-                      className={`h-2 rounded-full ${cat.total_spent / cat.budget_limit > 1 ? 'bg-red-500' : 'bg-green-500'}`}
-                      style={{ width: `${Math.min((cat.total_spent / cat.budget_limit) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <SpendingSummary spendingSummary={spendingSummary} />
 
-      {/* Lista transakcji */}
-      <div className="bg-white p-6 rounded shadow">
-        <h2 className="font-bold mb-4">Ostatnie transakcje</h2>
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {transactions.slice(0, 10).map(transaction => (
-            <div key={transaction.id} className="flex justify-between items-center p-3 border rounded">
-              <div>
-                <span className="font-semibold">{transaction.amount} zł</span>
-                <span className="text-gray-500 ml-2">({getCategoryName(transaction.category_id)})</span>
-                {transaction.description && (
-                  <span className="text-gray-400 ml-2">- {transaction.description}</span>
-                )}
-              </div>
-              <span className="text-sm text-gray-500">
-                {new Date(transaction.date).toLocaleDateString('pl-PL')}
-              </span>
-            </div>
-          ))}
-        </div>
-        </div>
-        {/* lista transakcji */}
-      <div className="mt-8 bg-white p-6 rounded shadow">
-        <h2 className="font-bold mb-4 border-b pb-2 text-gray-700">Historia transakcji</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-gray-400 border-b text-sm">
-                <th className="py-2">Data</th>
-                <th className="py-2">Opis / Kategoria</th>
-                <th className="py-2 text-right">Kwota</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.length === 0 ? (
-                <tr><td colSpan="3" className="py-4 text-center text-gray-400">Brak transakcji w tym miesiącu</td></tr>
-              ) : (
-                transactions.map((t) => (
-                  <tr key={t.id} className="border-b text-sm hover:bg-gray-50">
-                    <td className="py-2 text-gray-500">{new Date(t.date).toLocaleDateString()}</td>
-                    <td className="py-2 font-medium">{t.description}</td>
-                    <td className="py-2 text-right font-bold text-red-600">-{t.amount} zł</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <TransactionList transactions={transactions} getCategoryName={getCategoryName} />
     </div>
   );
 }

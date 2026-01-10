@@ -64,6 +64,22 @@ app.post('/api/register', async (req, res) => {
       [username, email, hashedPassword]
     );
 
+    // Dodajemy domyślne kategorie dla nowego użytkownika
+    const userId = newUser.rows[0].id;
+    const defaultCategories = [
+      { name: 'Jedzenie', limit: 1000 },
+      { name: 'Transport', limit: 500 },
+      { name: 'Rozrywka', limit: 300 },
+      { name: 'Zakupy', limit: 800 }
+    ];
+
+    for (const cat of defaultCategories) {
+      await pool.query(
+        'INSERT INTO categories (user_id, name, budget_limit) VALUES ($1, $2, $3)',
+        [userId, cat.name, cat.limit]
+      );
+    }
+
     res.json({ success: true, user: newUser.rows[0] });
   } catch (err) {
     console.error(err.message);
