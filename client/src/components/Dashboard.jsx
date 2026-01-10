@@ -5,7 +5,7 @@ function Dashboard({ user, onLogout }) {
   const [category, setCategory] = useState('Jedzenie');
   const [alert, setAlert] = useState('');
 
-  const handleAddTransaction = (e) => {
+  const handleAddTransaction = async (e) => {
     e.preventDefault();
     setAlert('');
 
@@ -15,14 +15,38 @@ function Dashboard({ user, onLogout }) {
       return;
     }
 
-    // weryfikacja limitu (prosty przyklad)
-    if (parseFloat(amount) > 1000) {
-      setAlert("PRZEKROCZENIE LIMITU!");
-    }
+    try {
+      // dane do backendu
+      const response = await fetch('http://localhost:5000/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id, // ID zalogowanego użytkownika
+          amount: parseFloat(amount),
+          category: category,
+          description: `Wydatek na ${category}`
+        })
+      });
 
-    console.log("Zapis transakcji w bazie:", { amount, category, date: new Date() });
-    setAmount('');
-    // tu aktualizacja licznikow i raportow
+      const data = await response.json();
+
+      if (data.success) {
+        // obsluga limitu miesiecznego
+        if (data.overLimit) {
+          setAlert(`PRZEKROCZONO LIMIT! W tym miesiącu na "${category}" wydano już łącznie: ${data.currentSum} zł (Twój limit to: ${data.limit} zł).`);
+        } else {
+          window.alert("Transakcja zapisana pomyślnie!");
+        }
+
+        setAmount('');
+      } else {
+        setAlert(`Błąd serwera: ${data.message || 'Nie udało się zapisać.'}`);
+      }
+
+    } catch (err) {
+      console.error("Błąd połączenia:", err);
+      setAlert('Błąd połączenia z serwerem. Upewnij się, że backend działa.');
+    }
   };
 
   return (
