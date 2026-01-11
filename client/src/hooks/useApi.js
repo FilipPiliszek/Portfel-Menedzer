@@ -88,6 +88,21 @@ export function useApi(userId) {
     }
   };
 
+  const updateCategory = async (id, categoryData) => {
+  try {
+    const response = await fetch(`http://localhost:5000/api/categories/${id}`, {
+      method: 'PUT', // metoda do aktualizacji
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(categoryData),
+    });
+    const result = await response.json();
+    return { response, result };
+  } catch (error) {
+    console.error('Błąd aktualizacji kategorii:', error);
+    throw error;
+  }
+};
+
   return {
     categories,
     setCategories,
@@ -98,5 +113,6 @@ export function useApi(userId) {
     fetchTransactions,
     addTransaction,
     addCategory,
+    updateCategory,
   };
 }
