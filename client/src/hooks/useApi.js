@@ -52,6 +52,20 @@ export function useApi(userId) {
     }
   };
 
+  const deleteTransaction = async (id) => {
+  const response = await fetch(`http://localhost:5000/api/transactions/${id}`, { method: 'DELETE' });
+  return await response.json();
+  };
+
+  const updateTransaction = async (id, data) => {
+    const response = await fetch(`http://localhost:5000/api/transactions/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return await response.json();
+  };
+
   const addTransaction = async (transactionData) => {
     try {
       const response = await fetch('http://localhost:5000/api/transactions', {
@@ -128,5 +142,7 @@ export function useApi(userId) {
     addCategory,
     deleteCategory,
     updateCategory,
+    deleteTransaction,
+    updateTransaction
   };
 }
