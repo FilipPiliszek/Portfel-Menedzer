@@ -24,6 +24,7 @@ function Dashboard({ user, onLogout }) {
     fetchTransactions,
     addTransaction,
     addCategory,
+    updateCategory,
   } = useApi(user?.id);
 
   // Efekt przy montowaniu komponentu
@@ -108,6 +109,19 @@ function Dashboard({ user, onLogout }) {
     }
   };
 
+  // obsluga edytowania kategorii
+  const handleUpdateCategory = async (id, updatedData) => {
+  try {
+    const { response } = await updateCategory(id, updatedData);
+    if (response.ok) {
+      fetchCategories();
+      fetchSpendingSummary();
+    }
+  } catch (error) {
+    setAlert('Błąd podczas aktualizacji limitu');
+  }
+};
+  
   // Funkcja pomocnicza do pobierania nazwy kategorii
   const getCategoryName = (id) => {
     const category = categories.find(c => c.id === id);
@@ -143,6 +157,7 @@ function Dashboard({ user, onLogout }) {
           setNewCategoryLimit={setNewCategoryLimit}
           categories={categories}
           onAddCategory={handleAddCategory}
+          onUpdateCategory={handleUpdateCategory}
         />
       </div>
 
