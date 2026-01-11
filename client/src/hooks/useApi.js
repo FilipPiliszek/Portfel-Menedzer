@@ -88,6 +88,19 @@ export function useApi(userId) {
     }
   };
 
+  const deleteCategory = async (categoryId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/categories/${categoryId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+      return { response, result };
+    } catch (error) {
+      console.error('Błąd usuwania kategorii:', error);
+      throw error;
+    }
+  };
   const updateCategory = async (id, categoryData) => {
   try {
     const response = await fetch(`http://localhost:5000/api/categories/${id}`, {
@@ -113,6 +126,7 @@ export function useApi(userId) {
     fetchTransactions,
     addTransaction,
     addCategory,
+    deleteCategory,
     updateCategory,
   };
 }
