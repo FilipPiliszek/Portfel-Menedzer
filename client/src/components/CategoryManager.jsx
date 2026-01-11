@@ -87,24 +87,28 @@ function CategoryManager({
                 <div className="flex flex-col">
                   <span className="font-medium">{cat.name}</span>
                   <span className="text-xs text-gray-500">
-                    Limit: {cat.budget_limit > 0 ? `${cat.budget_limit} zł` : 'Brak'}
+                    Limit: {cat.budget_limit > 0 ? `${parseFloat(cat.budget_limit).toFixed(2)} zł` : 'Brak'}
                   </span>
                 </div>
-                <button 
-                  onClick={() => startEditing(cat)}
-                  className="text-gray-400 hover:text-blue-500 p-1"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-                <button
-              onClick={() => onDeleteCategory(cat.id, cat.name)}
-              className="text-red-500 hover:text-red-700 text-sm underline ml-2"
-              title="Usuń kategorię"
-            >
-              Usuń
-            </button>
+
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => startEditing(cat)}
+                    className="text-gray-400 hover:text-blue-500 p-1 transition"
+                    title="Edytuj"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => onDeleteCategory(cat.id, cat.name)}
+                    className="text-red-500 hover:text-red-700 text-sm underline transition"
+                    title="Usuń kategorię"
+                  >
+                    Usuń
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -115,3 +119,4 @@ function CategoryManager({
 }
 
 export default CategoryManager;
+
