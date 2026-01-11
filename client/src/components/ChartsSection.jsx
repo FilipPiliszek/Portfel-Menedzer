@@ -67,7 +67,7 @@ function ChartsSection({ spendingSummary, transactions }) {
             <h3 className="font-semibold mb-4 text-center">Rozkład wydatków na kategorie</h3>
             {console.log('Rendering pie chart, pieData:', pieData, 'length:', pieData.length)}
             {pieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={450}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -75,7 +75,8 @@ function ChartsSection({ spendingSummary, transactions }) {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
+                    //innerRadius={80}
+                    outerRadius={140}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -84,6 +85,7 @@ function ChartsSection({ spendingSummary, transactions }) {
                     ))}
                   </Pie>
                   <Tooltip formatter={(value) => [`${value} zł`, 'Wydatki']} />
+                  <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
