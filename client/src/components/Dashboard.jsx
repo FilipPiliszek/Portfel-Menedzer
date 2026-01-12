@@ -27,6 +27,8 @@ function Dashboard({ user, onLogout }) {
     deleteCategory,
     addCategory,
     updateCategory,
+    deleteTransaction,
+    updateTransaction,
   } = useApi(user?.id);
 
   // Efekt przy montowaniu komponentu
@@ -47,8 +49,8 @@ function Dashboard({ user, onLogout }) {
     e.preventDefault();
     setAlert('');
 
-    if (!amount || amount <= 0 || !categoryId) {
-      setAlert('Wypełnij wszystkie pola poprawnie');
+    if (!amount || parseFloat(amount) <= 0 || !categoryId) {
+      setAlert('Błąd: Wprowadź kwotę i wybierz kategorię!');
       return;
     }
 
@@ -73,6 +75,22 @@ function Dashboard({ user, onLogout }) {
       setAlert('Błąd serwera');
     }
   };
+
+  // obsluga usuwania transakcji
+  const handleDeleteTransaction = async (id) => {
+  if (window.confirm("Usunąć tę transakcję?")) {
+    await deleteTransaction(id);
+    fetchTransactions();
+    fetchSpendingSummary(); // Ważne: odświeża paski budżetu!
+  }
+};
+
+// obsluga edycji transakcji
+const handleUpdateTransaction = async (id, data) => {
+  await updateTransaction(id, data);
+  fetchTransactions();
+  fetchSpendingSummary();
+};
 
   // Obsługa dodawania kategorii
   const handleAddCategory = async (e) => {
@@ -145,17 +163,11 @@ function Dashboard({ user, onLogout }) {
     setAlert('Błąd podczas aktualizacji limitu');
   }
 };
-  
-  // Funkcja pomocnicza do pobierania nazwy kategorii
-  const getCategoryName = (id) => {
-    const category = categories.find(c => c.id === id);
-    return category ? category.name : 'Nieznana';
-  };
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8 bg-white p-4 rounded shadow">
-        <h1 className="text-xl font-bold">Witaj, {user.username || 'Użytkowniku'}!</h1>
+        <h1 className="text-xl font-bold">Witaj, {user.name || 'Użytkowniku'}!</h1>
         <button onClick={onLogout} className="text-red-500 underline text-sm">Wyloguj</button>
       </div>
 
@@ -190,7 +202,12 @@ function Dashboard({ user, onLogout }) {
 
       <ChartsSection spendingSummary={spendingSummary} transactions={transactions} />
 
-      <TransactionList transactions={transactions} getCategoryName={getCategoryName} />
+      <TransactionList
+      transactions={transactions}
+      categories={categories}
+      onDelete={handleDeleteTransaction}
+      onUpdate={handleUpdateTransaction}
+      />
     </div>
   );
 }

@@ -84,9 +84,9 @@ function CategoryManager({
             ) : (
               // widok standardowy
               <>
-                <div className="flex flex-col">
+                <div className="flex flex-col text-left">
                   <span className="font-medium">{cat.name}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 text-left">
                     Limit: {cat.budget_limit > 0 ? `${parseFloat(cat.budget_limit).toFixed(2)} zł` : 'Brak'}
                   </span>
                 </div>
@@ -104,7 +104,6 @@ function CategoryManager({
                   <button
                     onClick={() => onDeleteCategory(cat.id, cat.name)}
                     className="text-red-500 hover:text-red-700 text-sm underline transition"
-                    title="Usuń kategorię"
                   >
                     Usuń
                   </button>
