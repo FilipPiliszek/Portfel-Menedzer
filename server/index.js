@@ -198,6 +198,36 @@ app.get('/api/spending-summary/:userId', async (req, res) => {
   }
 });
 
+// Pobieranie podsumowania wydatków po kategoriach dla konkretnego miesiąca
+app.get('/api/monthly-summary/:userId/:month', async (req, res) => {
+  const { userId, month } = req.params; // month w formacie YYYY-MM
+
+  try {
+    // Sprawdzamy format miesiąca
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ message: "Nieprawidłowy format miesiąca. Użyj YYYY-MM" });
+    }
+
+    const summary = await pool.query(
+      `SELECT c.id, c.name, c.budget_limit,
+              COALESCE(SUM(t.amount), 0) as total_spent,
+              CASE WHEN c.budget_limit > 0 THEN c.budget_limit - COALESCE(SUM(t.amount), 0) ELSE NULL END as remaining
+       FROM categories c
+       LEFT JOIN transactions t ON c.id = t.category_id 
+         AND t.user_id = $1 
+         AND to_char(t.date, 'YYYY-MM') = $2
+       WHERE c.user_id = $1
+       GROUP BY c.id, c.name, c.budget_limit
+       ORDER BY c.name`,
+      [userId, month]
+    );
+    res.json(summary.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
 // endpoint do dodawania transakcji z weryfikacja limitu miesiecznego
 // Dodawanie nowej transakcji z limitem MIESIĘCZNYM
 app.post('/api/transactions', async (req, res) => {

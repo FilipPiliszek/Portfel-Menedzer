@@ -4,6 +4,7 @@ export function useApi(userId) {
   const [categories, setCategories] = useState([]);
   const [spendingSummary, setSpendingSummary] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [monthlySummary, setMonthlySummary] = useState([]);
 
   const fetchCategories = async () => {
     if (!userId) return [];
@@ -34,6 +35,21 @@ export function useApi(userId) {
       setSpendingSummary(data);
     } catch (error) {
       console.error('Błąd pobierania podsumowania:', error);
+    }
+  };
+
+  const fetchMonthlySummary = async (month) => {
+    if (!userId || !month) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/monthly-summary/${userId}/${month}`);
+      if (!response.ok) {
+        console.error('Failed to fetch monthly summary:', response.status, response.statusText);
+        return;
+      }
+      const data = await response.json();
+      setMonthlySummary(data);
+    } catch (error) {
+      console.error('Błąd pobierania miesięcznego podsumowania:', error);
     }
   };
 
@@ -135,8 +151,11 @@ export function useApi(userId) {
     setCategories,
     spendingSummary,
     transactions,
+    monthlySummary,
+    setMonthlySummary,
     fetchCategories,
     fetchSpendingSummary,
+    fetchMonthlySummary,
     fetchTransactions,
     addTransaction,
     addCategory,
