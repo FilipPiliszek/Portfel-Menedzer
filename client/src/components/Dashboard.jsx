@@ -200,7 +200,7 @@ const handleUpdateTransaction = async (id, data) => {
 
       <SpendingSummary spendingSummary={spendingSummary} />
 
-      <ChartsSection spendingSummary={spendingSummary} transactions={transactions} />
+      <ChartsSection spendingSummary={spendingSummary} transactions={transactions} userId={user?.id} />
 
       <TransactionList
       transactions={transactions}
