@@ -49,8 +49,8 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
       const percentUsed = cat.budget_limit > 0 ? (cat.total_spent / cat.budget_limit) * 100 : 0;
       return {
         name: cat.name,
-        procent: Math.min(percentUsed, 100),
-        pozostalo: Math.max(0, 100 - percentUsed)
+        procent: Math.round(Math.min(percentUsed, 100)),
+        pozostalo: Math.round(Math.max(0, 100 - percentUsed))
       };
     });
 
@@ -146,7 +146,7 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
                     <XAxis type="number" domain={[0, 100]} hide />
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} width={80} tick={{fill: '#94a3b8'}} />
-                    <Tooltip {...chartStyle} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
+                    <Tooltip {...chartStyle} cursor={{fill: 'rgba(255,255,255,0.05)'}} formatter={(value, name) => [`${Math.round(value)}%`, name == 'procent' ? 'Wykorzystane' : 'Pozostało']}/>
                     <Bar dataKey="procent" stackId="a" fill="#f43f5e" radius={[0, 0, 0, 0]} barSize={12} />
                     <Bar dataKey="pozostalo" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} barSize={12} />
                   </BarChart>
