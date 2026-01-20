@@ -147,8 +147,8 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
                     <XAxis type="number" domain={[0, 100]} hide />
                     <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} width={80} tick={{fill: '#94a3b8'}} />
                     <Tooltip {...chartStyle} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
-                    <Bar dataKey="Procent" stackId="a" fill="#f43f5e" radius={[0, 0, 0, 0]} barSize={12} />
-                    <Bar dataKey="Pozostało" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} barSize={12} />
+                    <Bar dataKey="procent" stackId="a" fill="#f43f5e" radius={[0, 0, 0, 0]} barSize={12} />
+                    <Bar dataKey="pozostalo" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} barSize={12} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="h-[350px] flex items-center justify-center text-slate-600 italic">Brak limitów</div>}
