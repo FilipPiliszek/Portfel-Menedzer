@@ -32,7 +32,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-indigo-500/30">
       {user ? (
         // sesja aktywna - wyswietlamy dashboard
         <Dashboard user={user} onLogout={handleLogout} />

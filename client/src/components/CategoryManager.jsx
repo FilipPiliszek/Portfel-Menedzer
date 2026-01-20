@@ -1,18 +1,7 @@
 import React, { useState } from 'react';
+import { Settings, Plus, Edit2, Check, X, Trash2 } from 'lucide-react';
 
-function CategoryManager({
-  showAddCategory,
-  setShowAddCategory,
-  newCategoryName,
-  setNewCategoryName,
-  newCategoryLimit,
-  setNewCategoryLimit,
-  categories,
-  onAddCategory,
-  onDeleteCategory,
-  onUpdateCategory
-}) {
-  // lokalne stany do edycji (kategoria)
+function CategoryManager({ showAddCategory, setShowAddCategory, newCategoryName, setNewCategoryName, newCategoryLimit, setNewCategoryLimit, categories, onAddCategory, onUpdateCategory, onDeleteCategory }) {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editLimit, setEditLimit] = useState('');
@@ -20,7 +9,7 @@ function CategoryManager({
   const startEditing = (cat) => {
     setEditingId(cat.id);
     setEditName(cat.name);
-    setEditLimit(cat.budget_limit);
+    setEditLimit(cat.budget_limit || '');
   };
 
   const handleSave = async (id) => {
@@ -29,84 +18,39 @@ function CategoryManager({
   };
 
   return (
-    <div className="bg-white p-6 rounded shadow">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-bold">Zarządzanie kategoriami</h2>
-        <button
-          onClick={() => setShowAddCategory(!showAddCategory)}
-          className="text-blue-500 underline text-sm"
-        >
-          {showAddCategory ? 'Anuluj' : '+ Dodaj kategorię'}
-        </button>
+    <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-8 rounded-[2rem] shadow-2xl">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-xl font-black text-white flex items-center gap-3"><Settings className="text-cyan-400" size={24} /> Kategorie</h2>
+        <button onClick={() => setShowAddCategory(!showAddCategory)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-cyan-400">{showAddCategory ? <X size={20} /> : <Plus size={20} />}</button>
       </div>
-
+      
       {showAddCategory && (
-        <form onSubmit={onAddCategory} className="space-y-4 mb-4 p-4 bg-gray-50 rounded">
-          <input
-            type="text"
-            placeholder="Nazwa kategorii"
-            value={newCategoryName}
-            className="w-full p-2 border rounded"
-            onChange={(e) => setNewCategoryName(e.target.value)}
-          />
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Limit budżetowy (opcjonalny)"
-            value={newCategoryLimit}
-            className="w-full p-2 border rounded"
-            onChange={(e) => setNewCategoryLimit(e.target.value)}
-          />
-          <button className="w-full bg-blue-600 text-white py-2 rounded">
-            Dodaj kategorię
-          </button>
+        <form onSubmit={onAddCategory} className="space-y-4 mb-8 p-6 bg-white/[0.03] border border-white/5 rounded-2xl">
+          <input type="text" placeholder="Nazwa" value={newCategoryName} className="w-full bg-slate-950 border border-white/10 p-3 rounded-xl text-white outline-none focus:ring-1 focus:ring-cyan-500" onChange={(e) => setNewCategoryName(e.target.value)} />
+          <input type="number" placeholder="Limit" value={newCategoryLimit} className="w-full bg-slate-950 border border-white/10 p-3 rounded-xl text-white outline-none focus:ring-1 focus:ring-cyan-500" onChange={(e) => setNewCategoryLimit(e.target.value)} />
+          <button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-black uppercase tracking-widest py-3 rounded-xl transition-all">Dodaj kategorię</button>
         </form>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {categories.map(cat => (
-          <div key={cat.id} className="flex justify-between items-center p-2 border rounded hover:bg-gray-50 transition">
+          <div key={cat.id} className="group flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-white/10 transition-all">
             {editingId === cat.id ? (
-              // widok edycji
               <div className="flex gap-2 w-full">
-                <input 
-                  type="text" value={editName} className="p-1 border rounded text-sm flex-1"
-                  onChange={(e) => setEditName(e.target.value)}
-                />
-                <input 
-                  type="number" value={editLimit} className="p-1 border rounded text-sm w-20"
-                  onChange={(e) => setEditLimit(e.target.value)}
-                />
-                <button onClick={() => handleSave(cat.id)} className="text-green-600 text-xs font-bold">Zapisz</button>
-                <button onClick={() => setEditingId(null)} className="text-gray-400 text-xs">Anuluj</button>
+                <input type="text" value={editName} className="bg-slate-950 border border-white/10 p-1 rounded text-sm flex-1 text-white" onChange={(e) => setEditName(e.target.value)} />
+                <input type="number" value={editLimit} className="bg-slate-950 border border-white/10 p-1 rounded text-sm w-20 text-white" onChange={(e) => setEditLimit(e.target.value)} />
+                <button onClick={() => handleSave(cat.id)} className="text-emerald-400 p-1"><Check size={18} /></button>
+                <button onClick={() => setEditingId(null)} className="text-slate-500 p-1"><X size={18} /></button>
               </div>
             ) : (
-              // widok standardowy
               <>
-                <div className="flex flex-col text-left">
-                  <span className="font-medium">{cat.name}</span>
-                  <span className="text-xs text-gray-500 text-left">
-                    Limit: {cat.budget_limit > 0 ? `${parseFloat(cat.budget_limit).toFixed(2)} zł` : 'Brak'}
-                  </span>
+                <div>
+                  <div className="text-slate-100 font-bold">{cat.name}</div>
+                  <div className="text-[10px] text-slate-500 font-black uppercase tracking-tighter italic">Limit: {cat.budget_limit > 0 ? `${cat.budget_limit} zł` : 'Brak'}</div>
                 </div>
-
-                <div className="flex items-center gap-4">
-                  <button 
-                    onClick={() => startEditing(cat)}
-                    className="text-gray-400 hover:text-blue-500 p-1 transition"
-                    title="Edytuj"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => onDeleteCategory(cat.id, cat.name)}
-                    className="text-red-500 hover:text-red-700 text-sm underline transition"
-                  >
-                    Usuń
-                  </button>
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                  <button onClick={() => startEditing(cat)} className="p-2 text-slate-500 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg"><Edit2 size={16} /></button>
+                  <button onClick={() => onDeleteCategory(cat.id)} className="p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg"><Trash2 size={16} /></button>
                 </div>
               </>
             )}
@@ -116,6 +60,4 @@ function CategoryManager({
     </div>
   );
 }
-
 export default CategoryManager;
-
