@@ -4,6 +4,7 @@ export function useApi(userId) {
   const [categories, setCategories] = useState([]);
   const [spendingSummary, setSpendingSummary] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [monthlySummary, setMonthlySummary] = useState([]);
 
   const fetchCategories = async () => {
     if (!userId) return [];
@@ -37,6 +38,21 @@ export function useApi(userId) {
     }
   };
 
+  const fetchMonthlySummary = async (month) => {
+    if (!userId || !month) return;
+    try {
+      const response = await fetch(`http://localhost:5000/api/monthly-summary/${userId}/${month}`);
+      if (!response.ok) {
+        console.error('Failed to fetch monthly summary:', response.status, response.statusText);
+        return;
+      }
+      const data = await response.json();
+      setMonthlySummary(data);
+    } catch (error) {
+      console.error('Błąd pobierania miesięcznego podsumowania:', error);
+    }
+  };
+
   const fetchTransactions = async () => {
     if (!userId) return;
     try {
@@ -50,6 +66,20 @@ export function useApi(userId) {
     } catch (error) {
       console.error('Błąd pobierania transakcji:', error);
     }
+  };
+
+  const deleteTransaction = async (id) => {
+  const response = await fetch(`http://localhost:5000/api/transactions/${id}`, { method: 'DELETE' });
+  return await response.json();
+  };
+
+  const updateTransaction = async (id, data) => {
+    const response = await fetch(`http://localhost:5000/api/transactions/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return await response.json();
   };
 
   const addTransaction = async (transactionData) => {
@@ -121,12 +151,17 @@ export function useApi(userId) {
     setCategories,
     spendingSummary,
     transactions,
+    monthlySummary,
+    setMonthlySummary,
     fetchCategories,
     fetchSpendingSummary,
+    fetchMonthlySummary,
     fetchTransactions,
     addTransaction,
     addCategory,
     deleteCategory,
     updateCategory,
+    deleteTransaction,
+    updateTransaction
   };
 }

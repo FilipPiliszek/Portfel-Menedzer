@@ -198,6 +198,36 @@ app.get('/api/spending-summary/:userId', async (req, res) => {
   }
 });
 
+// Pobieranie podsumowania wydatków po kategoriach dla konkretnego miesiąca
+app.get('/api/monthly-summary/:userId/:month', async (req, res) => {
+  const { userId, month } = req.params; // month w formacie YYYY-MM
+
+  try {
+    // Sprawdzamy format miesiąca
+    if (!/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ message: "Nieprawidłowy format miesiąca. Użyj YYYY-MM" });
+    }
+
+    const summary = await pool.query(
+      `SELECT c.id, c.name, c.budget_limit,
+              COALESCE(SUM(t.amount), 0) as total_spent,
+              CASE WHEN c.budget_limit > 0 THEN c.budget_limit - COALESCE(SUM(t.amount), 0) ELSE NULL END as remaining
+       FROM categories c
+       LEFT JOIN transactions t ON c.id = t.category_id 
+         AND t.user_id = $1 
+         AND to_char(t.date, 'YYYY-MM') = $2
+       WHERE c.user_id = $1
+       GROUP BY c.id, c.name, c.budget_limit
+       ORDER BY c.name`,
+      [userId, month]
+    );
+    res.json(summary.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera");
+  }
+});
+
 // endpoint do dodawania transakcji z weryfikacja limitu miesiecznego
 // Dodawanie nowej transakcji z limitem MIESIĘCZNYM
 app.post('/api/transactions', async (req, res) => {
@@ -205,7 +235,7 @@ app.post('/api/transactions', async (req, res) => {
   const numAmount = parseFloat(amount);
 
   try {
-    // 1. Obliczamy sumę wydatków tylko z OBECNEGO MIESIĄCA dla tej kategorii
+    // tylko obecny miesiac do sumy wydatkow
     const sumRes = await pool.query(
       `SELECT COALESCE(SUM(amount), 0) as total FROM transactions 
        WHERE user_id = $1 AND category_id = $2 
@@ -237,6 +267,33 @@ app.post('/api/transactions', async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Błąd serwera");
+  }
+});
+
+// usuwanie transakcji
+app.delete('/api/transactions/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM transactions WHERE id = $1', [req.params.id]);
+    res.json({ message: "Transakcja usunięta" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera przy usuwaniu transakcji");
+  }
+});
+
+// edycja transakcji
+app.put('/api/transactions/:id', async (req, res) => {
+  const { id } = req.params;
+  const { amount, description, categoryId } = req.body;
+  try {
+    const updated = await pool.query(
+      'UPDATE transactions SET amount = $1, description = $2, category_id = $3 WHERE id = $4 RETURNING *',
+      [amount, description, categoryId, id]
+    );
+    res.json(updated.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Błąd serwera przy edycji transakcji");
   }
 });
 
