@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlusCircle, DollarSign, Tag, FileText } from 'lucide-react';
+import { PlusCircle, Coins, Tag, FileText } from 'lucide-react';
 
 function TransactionForm({ amount, setAmount, categoryId, setCategoryId, description, setDescription, categories, onSubmit, alert }) {
   const inputClass = "w-full bg-slate-950/50 border border-white/10 text-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all";
@@ -11,7 +11,10 @@ function TransactionForm({ amount, setAmount, categoryId, setCategoryId, descrip
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="relative">
           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-1 block">Kwota</label>
-          <DollarSign className="absolute left-3 top-[34px] text-slate-600" size={18} />
+          {/* <Coins className="absolute left-3 top-[34px] text-slate-600" size={18} /> */}
+          <div className="absolute left-3 top-[34px] w-[18px] h-[18px] flex items-center justify-center">
+            <span className="text-slate-600 font-black text-[10px] select-none">PLN</span>
+        </div>
           <input type="number" step="0.01" placeholder="0.00" value={amount} className={inputClass} onChange={(e) => setAmount(e.target.value)} />
         </div>
         <div className="relative">
