@@ -68,6 +68,31 @@ export function useApi(userId) {
     }
   };
 
+  const fetchBalance = async () => {
+    if (!userId) return { balance: 0 };
+    try {
+      const response = await fetch(`http://localhost:5000/api/user/balance/${userId}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Błąd pobierania salda:', error);
+      return { balance: 0 };
+    }
+  };
+
+  const addIncome = async (amount) => {
+    if (!userId) return;
+    try {
+      const response = await fetch('http://localhost:5000/api/user/add-income', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, amount, description: 'Wpłata do portfela' }),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Błąd dodawania wpływu:', error);
+    }
+  };
+
   const deleteTransaction = async (id) => {
   const response = await fetch(`http://localhost:5000/api/transactions/${id}`, { method: 'DELETE' });
   return await response.json();
@@ -162,6 +187,8 @@ export function useApi(userId) {
     deleteCategory,
     updateCategory,
     deleteTransaction,
-    updateTransaction
+    updateTransaction,
+    fetchBalance,
+    addIncome
   };
 }
