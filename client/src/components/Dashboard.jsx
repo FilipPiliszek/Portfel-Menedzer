@@ -163,8 +163,9 @@ function Dashboard({ user, onLogout }) {
     try {
       const { response } = await updateCategory(id, updatedData);
       if (response.ok) {
-        fetchCategories();
-        fetchSpendingSummary();
+        await fetchCategories();
+        await fetchSpendingSummary(); 
+        await fetchTransactions();
       }
     } catch (error) {
       setAlert('Błąd podczas aktualizacji limitu');
