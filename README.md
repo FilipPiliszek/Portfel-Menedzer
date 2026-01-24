@@ -52,8 +52,8 @@ Portfel Menedżer to intuicyjne narzędzie webowe pozwalające na pełną kontro
 1. **Sklonuj repozytorium:**
 
 ```bash
-git clone https://github.com/FilipPiliszek/Portfel-Mened-er.git
-cd Portfel-Mened-er
+git clone https://github.com/FilipPiliszek/Portfel-Menedzer.git
+cd Portfel-Menedzer
 ```
 
 2. **Zainstaluj zależności dla całego projektu**
