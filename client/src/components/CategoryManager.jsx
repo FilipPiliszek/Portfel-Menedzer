@@ -50,8 +50,7 @@ function CategoryManager({ showAddCategory, setShowAddCategory, newCategoryName,
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
                   <button onClick={() => startEditing(cat)} className="p-2 text-slate-500 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg"><Edit2 size={16} /></button>
-                  <button onClick={() => onDeleteCategory(cat.id)} className="p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg"><Trash2 size={16} /></button>
-                </div>
+<button onClick={() => onDeleteCategory(cat.id, cat.name)} className="p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg"><Trash2 size={16} /></button>                </div>
               </>
             )}
           </div>

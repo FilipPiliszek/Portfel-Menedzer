@@ -5,7 +5,8 @@ import CategoryManager from './CategoryManager';
 import SpendingSummary from './SpendingSummary';
 import ChartsSection from './ChartsSection';
 import TransactionList from './TransactionList';
-import { LogOut, Wallet } from 'lucide-react'; // Dodane ikony
+import { LogOut, Wallet, AlertTriangle } from 'lucide-react'; // Dodane ikony
+
 
 function Dashboard({ user, onLogout }) {
   const [amount, setAmount] = useState('');
@@ -19,6 +20,7 @@ function Dashboard({ user, onLogout }) {
   // Stany dla salda (dodane dyskretnie)
   const [walletData, setWalletData] = useState({ balance: 0, totalIncome: 0, totalSpent: 0 });
   const [incomeInput, setIncomeInput] = useState('');
+  const [modal, setModal] = useState({ show: false, type: null, id: null, title: '', msg: '' });
 
   const {
     categories,
@@ -92,14 +94,35 @@ function Dashboard({ user, onLogout }) {
     }
   };
 
-  const handleDeleteTransaction = async (id) => {
-    if (window.confirm("Usunąć tę transakcję?")) {
-      await deleteTransaction(id);
+  const confirmAction = async () => {
+    if (modal.type === 'transaction') {
+      await deleteTransaction(modal.id);
       fetchTransactions();
       fetchSpendingSummary();
       updateBalance();
+    } else if (modal.type === 'category') {
+      const { response, result } = await deleteCategory(modal.id);
+      if (response.ok) {
+        setAlert(`Kategoria usunięta pomyślnie`);
+        fetchCategories();
+        fetchSpendingSummary();
+        fetchTransactions();
+      } else {
+        setAlert(result.message || 'Błąd usuwania');
+      }
     }
+    setModal({ ...modal, show: false });
   };
+
+  const handleDeleteTransaction = (id) => {
+      setModal({
+        show: true, 
+        type: 'transaction', 
+        id, 
+        title: 'Usunąć transakcję?', 
+        msg: 'Tej operacji nie można cofnąć.'
+      });
+    };
 
   const handleUpdateTransaction = async (id, data) => {
     await updateTransaction(id, data);
@@ -140,23 +163,14 @@ function Dashboard({ user, onLogout }) {
     }
   };
 
-  const handleDeleteCategory = async (categoryId, categoryName) => {
-    if (!window.confirm(`Czy na pewno chcesz usunąć kategorię "${categoryName}"? Wszystkie transakcje w tej kategorii zostaną zachowane, ale nie będą przypisane do żadnej kategorii.`)) {
-      return;
-    }
-    try {
-      const { response, result } = await deleteCategory(categoryId);
-      if (response.ok) {
-        setAlert(`Kategoria "${categoryName}" została usunięta`);
-        fetchCategories();
-        fetchSpendingSummary();
-        fetchTransactions();
-      } else {
-        setAlert(result.message || 'Błąd usuwania kategorii');
-      }
-    } catch (error) {
-      setAlert('Błąd serwera');
-    }
+const handleDeleteCategory = (categoryId, categoryName) => {
+    setModal({
+      show: true, 
+      type: 'category', 
+      id: categoryId, 
+      title: `Usunąć kategorię "${categoryName}"?`, 
+      msg: 'Transakcje zostaną zachowane, ale nie będą przypisane do żadnej kategorii.'
+    });
   };
 
   const handleUpdateCategory = async (id, updatedData) => {
@@ -274,7 +288,35 @@ function Dashboard({ user, onLogout }) {
         onDelete={handleDeleteTransaction}
         onUpdate={handleUpdateTransaction}
       />
-      
+      {modal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-xl font-black text-white">{modal.title}</h3>
+            </div>
+            <p className="text-slate-400 mb-8 leading-relaxed text-sm">
+              {modal.msg}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setModal({ ...modal, show: false })}
+                className="px-5 py-3 text-slate-300 font-bold hover:bg-white/5 rounded-xl transition-all uppercase text-[10px] tracking-wider"
+              >
+                Anuluj
+              </button>
+              <button 
+                onClick={confirmAction}
+                className="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-xl shadow-lg shadow-rose-900/20 transition-all uppercase text-[10px] tracking-wider active:scale-95"
+              >
+                Potwierdź usunięcie
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
