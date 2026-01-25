@@ -67,7 +67,8 @@ function TransactionList({ transactions, getCategoryName, categories, onDelete, 
                 /* WIDOK STANDARDOWY */
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-4 text-left">
-                    <div className="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                    {/* Kolor ikony (inline) */}
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${t.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
                       <DollarSign size={20} />
                     </div>
                     <div>
@@ -76,15 +77,19 @@ function TransactionList({ transactions, getCategoryName, categories, onDelete, 
                         <span className="flex items-center gap-1">
                           <Calendar size={10} /> {t.date ? new Date(t.date).toLocaleDateString('pl-PL') : '---'}
                         </span>
-                        <span className="flex items-center gap-1 text-indigo-400">
-                          <Tag size={10} /> {getCategoryName(t.category_id)}
+                        {/* Kolor tagu i tekst (inline) */}
+                        <span className={`flex items-center gap-1 ${t.type === 'income' ? 'text-emerald-400' : 'text-indigo-400'}`}>
+                          <Tag size={10} /> {t.type === 'income' ? 'Wpływ' : getCategoryName(t.category_id)}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <span className="text-xl font-black text-rose-400">-{t.amount} zł</span>
+                    {/* Kolor kwoty i znak (inline) */}
+                    <span className={`text-xl font-black ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {t.type === 'income' ? '+' : '-'}{t.amount} zł
+                    </span>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                       <button 
                         onClick={() => startEditing(t)} 

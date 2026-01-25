@@ -3,7 +3,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { useApi } from '../hooks/useApi';
 import { ChevronDown, BarChart3, TrendingUp, PieChart as PieIcon } from 'lucide-react';
 
-
 const COLORS = ['#6366f1', '#06b6d4', '#10b981', '#f43f5e', '#8b5cf6', '#f59e0b'];
 
 function ChartsSection({ spendingSummary, transactions, userId }) {
@@ -33,7 +32,7 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
     if (selectedMonth && userId) {
       fetchMonthlySummary(selectedMonth);
     }
-  }, [selectedMonth, userId]);
+  }, [selectedMonth, userId, transactions]); // Dodano transactions do zależności - odświeży po dodaniu wpisu
 
   const pieData = (monthlySummary || [])
     .filter(cat => cat.total_spent > 0)
@@ -54,16 +53,18 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
       };
     });
 
-  const monthlyData = transactions.reduce((acc, transaction) => {
-    const date = new Date(transaction.date);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    if (!acc[monthKey]) {
-      acc[monthKey] = { month: monthKey, wydatki: 0, count: 0 };
-    }
-    acc[monthKey].wydatki += parseFloat(transaction.amount) || 0;
-    acc[monthKey].count += 1;
-    return acc;
-  }, {});
+  const monthlyData = transactions
+    .filter(t => t.type !== 'income') // IGNORUJEMY WPŁATY W TRENDZIE
+    .reduce((acc, transaction) => {
+      const date = new Date(transaction.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (!acc[monthKey]) {
+        acc[monthKey] = { month: monthKey, wydatki: 0, count: 0 };
+      }
+      acc[monthKey].wydatki += parseFloat(transaction.amount) || 0;
+      acc[monthKey].count += 1;
+      return acc;
+    }, {});
 
   const lineData = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
 
@@ -75,7 +76,6 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
     return `${months[parseInt(month) - 1]} ${year}`;
   };
 
-  // Styl dla okienek wykresu (Dark Mode)
   const chartStyle = {
     contentStyle: { backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', color: '#f1f5f9' },
     itemStyle: { color: '#f1f5f9' }
@@ -115,7 +115,6 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Pie Chart */}
             <div className="bg-white/[0.02] p-8 rounded-3xl border border-white/5 relative group hover:border-indigo-500/30 transition-all">
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-8 text-center italic flex items-center justify-center gap-2">
                 <PieIcon size={14} /> Struktura wydatków
@@ -135,7 +134,6 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
               ) : <div className="h-[350px] flex items-center justify-center text-slate-600 italic">Brak danych</div>}
             </div>
 
-            {/* Bar Chart */}
             <div className="bg-white/[0.02] p-8 rounded-3xl border border-white/5 hover:border-indigo-500/30 transition-all">
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-8 text-center italic flex items-center justify-center gap-2">
                 Wykorzystanie limitów (%)
@@ -145,7 +143,7 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
                   <BarChart data={barData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
                     <XAxis type="number" domain={[0, 100]} hide />
-                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} width={80} tick={{fill: '#94a3b8'}} />
+                    <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={10} tick={{fill: '#94a3b8'}} />
                     <Tooltip {...chartStyle} cursor={{fill: 'rgba(255,255,255,0.05)'}} formatter={(value, name) => [`${Math.round(value)}%`, name == 'procent' ? 'Wykorzystane' : 'Pozostało']}/>
                     <Bar dataKey="procent" stackId="a" fill="#f43f5e" radius={[0, 0, 0, 0]} barSize={12} />
                     <Bar dataKey="pozostalo" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} barSize={12} />
@@ -155,7 +153,6 @@ function ChartsSection({ spendingSummary, transactions, userId }) {
             </div>
           </div>
 
-          {/* Line Chart */}
           <div className="bg-white/[0.02] p-8 rounded-3xl border border-white/5 hover:border-indigo-500/30 transition-all">
             <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-8 text-center italic flex items-center justify-center gap-2">
               <TrendingUp size={14} /> Trend wydatków miesięcznych

@@ -158,8 +158,9 @@ app.get('/api/transactions/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
+    // Dodano t.type do selecta, aby frontend mógł rozróżnić wydatki od wpływów
     const transactions = await pool.query(
-      `SELECT t.id, t.amount, t.description, t.date, c.name as category_name, c.id as category_id
+      `SELECT t.id, t.amount, t.description, t.date, t.type, c.name as category_name, c.id as category_id
        FROM transactions t
        LEFT JOIN categories c ON t.category_id = c.id
        WHERE t.user_id = $1
@@ -178,6 +179,7 @@ app.get('/api/spending-summary/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
+    // Dodano warunek (t.type = 'expense' OR t.type IS NULL) aby nie wliczać wpływów do budżetu
     const summary = await pool.query(
   `SELECT c.id, c.name, c.budget_limit,
           COALESCE(SUM(t.amount), 0) as total_spent,
@@ -185,7 +187,8 @@ app.get('/api/spending-summary/:userId', async (req, res) => {
    FROM categories c
    LEFT JOIN transactions t ON c.id = t.category_id 
      AND t.user_id = $1 
-     AND t.date >= date_trunc('month', CURRENT_DATE) -- DODAJEMY TO!
+     AND (t.type = 'expense' OR t.type IS NULL)
+     AND t.date >= date_trunc('month', CURRENT_DATE) 
    WHERE c.user_id = $1
    GROUP BY c.id, c.name, c.budget_limit
    ORDER BY c.name`,
@@ -208,6 +211,7 @@ app.get('/api/monthly-summary/:userId/:month', async (req, res) => {
       return res.status(400).json({ message: "Nieprawidłowy format miesiąca. Użyj YYYY-MM" });
     }
 
+    // Dodano filtrowanie po typie expense
     const summary = await pool.query(
       `SELECT c.id, c.name, c.budget_limit,
               COALESCE(SUM(t.amount), 0) as total_spent,
@@ -215,6 +219,7 @@ app.get('/api/monthly-summary/:userId/:month', async (req, res) => {
        FROM categories c
        LEFT JOIN transactions t ON c.id = t.category_id 
          AND t.user_id = $1 
+         AND (t.type = 'expense' OR t.type IS NULL)
          AND to_char(t.date, 'YYYY-MM') = $2
        WHERE c.user_id = $1
        GROUP BY c.id, c.name, c.budget_limit
@@ -235,10 +240,11 @@ app.post('/api/transactions', async (req, res) => {
   const numAmount = parseFloat(amount);
 
   try {
-    // tylko obecny miesiac do sumy wydatkow
+    // tylko wydatki wliczamy do sumy (type = 'expense')
     const sumRes = await pool.query(
       `SELECT COALESCE(SUM(amount), 0) as total FROM transactions 
        WHERE user_id = $1 AND category_id = $2 
+       AND (type = 'expense' OR type IS NULL)
        AND date >= date_trunc('month', CURRENT_DATE)`,
       [userId, categoryId]
     );
@@ -251,9 +257,9 @@ app.post('/api/transactions', async (req, res) => {
     // czy po nowej transakcji przekroczono limt?
     const overLimit = (limit > 0 && (monthlySum + numAmount) > limit);
 
-    // zapis
+    // zapis - dodajemy 'type' = 'expense'
     const newTransaction = await pool.query(
-      'INSERT INTO transactions (user_id, category_id, amount, description, date) VALUES ($1, $2, $3, $4, CURRENT_DATE) RETURNING *',
+      "INSERT INTO transactions (user_id, category_id, amount, type, description, date) VALUES ($1, $2, $3, 'expense', $4, CURRENT_DATE) RETURNING *",
       [userId, categoryId, numAmount, description]
     );
 
@@ -269,6 +275,31 @@ app.post('/api/transactions', async (req, res) => {
     res.status(500).send("Błąd serwera");
   }
 });
+
+// --- NOWE ENDPOINTY (SALDO I WPŁYWY) ---
+
+app.get('/api/user/balance/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income, SUM(CASE WHEN type = 'expense' OR type IS NULL THEN amount ELSE 0 END) as spent FROM transactions WHERE user_id = $1",
+      [userId]
+    );
+    const inc = parseFloat(result.rows[0].income || 0);
+    const spnt = parseFloat(result.rows[0].spent || 0);
+    res.json({ balance: inc - spnt, totalIncome: inc, totalSpent: spnt });
+  } catch (err) { res.status(500).send("Błąd"); }
+});
+
+app.post('/api/user/add-income', async (req, res) => {
+  const { userId, amount } = req.body;
+  try {
+    await pool.query("INSERT INTO transactions (user_id, amount, type, description, date) VALUES ($1, $2, 'income', 'Wpłata', CURRENT_DATE)", [userId, amount]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).send("Błąd"); }
+});
+
+// ---------------------------------------
 
 // usuwanie transakcji
 app.delete('/api/transactions/:id', async (req, res) => {

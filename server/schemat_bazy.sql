@@ -1,4 +1,4 @@
--- Skrypt inicjalizujacy strukture bazy danych(to co jest napisane w pgAdmin w postgreSQL)
+-- Skrypt inicjalizujący strukturę bazy danych (zaktualizowany o obsługę wpływów)
 
 -- 1. Tabela użytkowników
 CREATE TABLE users (
@@ -23,6 +23,7 @@ CREATE TABLE transactions (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
     amount DECIMAL(12, 2) NOT NULL,
+    type VARCHAR(10) DEFAULT 'expense',
     description TEXT,
     date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
