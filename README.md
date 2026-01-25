@@ -1,4 +1,14 @@
-**Aplikacja do zarządzania budżetem domowym**  
+# **Aplikacja do zarządzania budżetem domowym**
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19">
+  <img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express.js">
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
+</p>
+
 Projekt realizowany w ramach przedmiotu: _Podstawy Zarządzania Projektami_
 
 ## Zespół Projektowy (020310_03_PZP_2025)
@@ -16,27 +26,27 @@ Portfel Menedżer to intuicyjne narzędzie webowe pozwalające na pełną kontro
 
 ### Kluczowe funkcjonalności
 
-- **Autoryzacja:** Bezpieczne logowanie i rejestracja użytkowników (szyfrowanie haseł `bcrypt`).
-- **Zarządzanie transakcjami:** Dodawanie, edytowanie i usuwanie wydatków oraz przychodów.
+- **Pełna autoryzacja:** Bezpieczny system rejestracji i logowania z hashowaniem haseł po stronie serwera przy użyciu **bcrypt** oraz utrwalaniem sesji w przeglądarce.
+- **Zarządzanie transakcjami:** Pełne operacje CRUD (tworzenie, odczyt, aktualizacja, usuwanie) z edycją "w miejscu" (inline editing) dla maksymalnej wygody.
 - **Limity budżetowe:** System ostrzeżeń po przekroczeniu zdefiniowanego limitu na daną kategorię.
-- **Analityka:** Dynamiczne wykresy (kołowe i słupkowe) obrazujące strukturę wydatków.
+- **Wizualizacja danych:** Dynamiczne i interaktywne wykresy (kołowe, słupkowe i liniowe) obrazujące strukturę wydatków i trendy w czasie, zrealizowane przy użyciu biblioteki **Recharts**.
 - **Responsywny Design:** Nowoczesny interfejs wykonany w Dark Mode (Tailwind CSS).
 
 ## Technologie
 
-**Backend:**
+#### **Backend:**
 
-- Node.js + Express
-- PostgreSQL (Baza danych)
-- pg (node-postgres)
-- Bcrypt (bezpieczeństwo)
+- **Node.js + Express**
+- **PostgreSQL (Baza danych)**
+- **pg (node-postgres)**
+- **Bcrypt (bezpieczeństwo)**
 
-**Frontend:**
+#### **Frontend:**
 
-- React 19 (Vite)
-- Tailwind CSS 4
-- Lucide React (ikony)
-- Recharts (wizualizacja danych)
+- **React 19 (Vite)**
+- **Tailwind CSS 4**
+- **Lucide React (ikony)**
+- **Recharts (wizualizacja danych)**
 
 ---
 
@@ -44,7 +54,7 @@ Portfel Menedżer to intuicyjne narzędzie webowe pozwalające na pełną kontro
 
 ### Wymagania wstępne:
 
-- Zainstalowany [Node.js](https://nodejs.org/)
+- Zainstalowany [Node.js v20+](https://nodejs.org/)
 - Zainstalowany [PostgreSQL](https://www.postgresql.org/)
 
 ### Kroki instalacji:
