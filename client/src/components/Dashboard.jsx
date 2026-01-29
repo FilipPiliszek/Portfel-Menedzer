@@ -202,52 +202,88 @@ const handleDeleteCategory = (categoryId, categoryName) => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 pb-24">
+    <div className="max-w-6xl mx-auto px-4 py-6 md:py-10 space-y-8 pb-24">
       
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center py-8 border-b border-white/10 gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 bg-indigo-500/20 rounded-lg">
-              <Wallet className="text-indigo-400" size={24} />
+      {/* NAGŁÓWEK Z PORTFELEM */}
+      <header className="space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/10 pb-8 gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-500/20 rounded-2xl shadow-inner">
+              <Wallet className="text-indigo-400" size={32} />
             </div>
-            <h1 className="text-4xl font-black bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent italic tracking-tighter">
-              Witaj, {user.name || 'Użytkowniku'}!
-            </h1>
+            <div>
+              <h1 className="text-3xl md:text-5xl font-black bg-gradient-to-r from-white via-indigo-200 to-cyan-400 bg-clip-text text-transparent italic tracking-tighter">
+                Witaj, {user.name || 'Użytkowniku'}!
+              </h1>
+              <p className="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-[0.3em]">System Zarządzania Budżetem</p>
+            </div>
           </div>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-[0.2em] ml-11">Twój portfel pod kontrolą</p>
+          
+          <button 
+            onClick={onLogout} 
+            className="group flex items-center gap-2 px-6 py-3 bg-rose-500/5 hover:bg-rose-500/20 text-rose-500 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border border-rose-500/10 active:scale-95"
+          >
+            <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+            Wyloguj się
+          </button>
+        </div>
 
-          <div className="ml-11 mt-8 flex flex-col gap-4 min-w-[450px]">
-            <div className="flex justify-between items-center gap-6">
+        {/* KARTA SALDA I WPŁYWU (RESPONSYWNA) */}
+        <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden group">
+          <div className="absolute -right-20 -top-20 w-80 h-80 bg-emerald-500/5 blur-[120px] rounded-full group-hover:bg-emerald-500/10 transition-all duration-700"></div>
+          
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            {/* Lewa: Saldo */}
+            <div className="space-y-4">
               <div>
-                <p className="text-slate-500 text-[11px] uppercase font-black tracking-widest mb-1">Dostępne środki</p>
-                <p className="text-5xl font-mono font-black text-emerald-400 tracking-tighter italic">
-                  {walletData.balance.toFixed(2)} <span className="text-2xl ml-[-10px]">PLN</span>
+                <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                  Dostępne środki (PLN)
                 </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-5xl md:text-7xl font-mono font-black text-white tracking-tighter italic">
+                    {walletData.balance.toFixed(2)}
+                  </span>
+                  <span className="text-xl md:text-2xl font-black text-emerald-500/50">zł</span>
+                </div>
               </div>
-              <div className="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5">
-                <input type="number" value={incomeInput} onChange={(e) => setIncomeInput(e.target.value)} placeholder="0.00" className="w-32 px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-emerald-400 font-mono text-lg font-bold outline-none focus:border-emerald-500/50 transition-all placeholder:text-emerald-900" />
-                <button onClick={handleAddFunds} className="px-6 py-3 bg-emerald-500 text-black hover:bg-emerald-400 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.3)]">Dodaj wpływ</button>
+
+              {/* Progress bar */}
+              <div className="space-y-3">
+                <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden border border-white/5 p-[1.5px]">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] ${getBarColor()}`} 
+                    style={{ width: `${spentPercentage}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-[10px] md:text-xs font-black uppercase tracking-widest px-1">
+                  <span className="text-slate-400">Wykorzystano <span className={spentPercentage > 85 ? 'text-rose-500' : 'text-emerald-400'}>{spentPercentage.toFixed(1)}%</span></span>
+                  <span className="text-slate-500">Suma wydatków: {walletData.totalSpent.toFixed(2)} zł</span>
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[2px]">
-                <div className={`h-full rounded-full transition-all duration-700 ease-out ${getBarColor()}`} style={{ width: `${spentPercentage}%` }}></div>
+
+            {/* Prawa: Szybka wpłata */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/5 p-4 rounded-3xl border border-white/5">
+              <div className="relative w-full">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500/50 font-black">$</span>
+                <input 
+                  type="number" 
+                  value={incomeInput} 
+                  onChange={(e) => setIncomeInput(e.target.value)} 
+                  placeholder="Kwota wpływu" 
+                  className="w-full pl-8 pr-4 py-4 bg-black/40 border border-white/10 rounded-2xl text-emerald-400 font-mono text-xl font-bold outline-none focus:border-emerald-500/50 transition-all placeholder:text-emerald-900/50" 
+                />
               </div>
-              <div className="flex justify-between items-center px-1">
-                <p className="text-[11px] text-slate-400 font-black uppercase tracking-widest">Wykorzystano <span className={spentPercentage > 85 ? 'text-rose-500' : 'text-emerald-400'}>{spentPercentage.toFixed(1)}%</span> budżetu</p>
-                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Suma wydatków: {walletData.totalSpent.toFixed(2)} PLN</p>
-              </div>
+              <button 
+                onClick={handleAddFunds} 
+                className="w-full sm:w-auto whitespace-nowrap px-8 py-4 bg-emerald-500 text-black hover:bg-emerald-400 rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 shadow-[0_0_30px_rgba(16,185,129,0.2)]"
+              >
+                Dodaj wpływ
+              </button>
             </div>
           </div>
         </div>
-        
-        <button 
-          onClick={onLogout} 
-          className="group flex items-center gap-2 px-6 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-full text-xs font-black uppercase tracking-widest transition-all border border-rose-500/20 active:scale-95"
-        >
-          <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
-          Wyloguj się
-        </button>
       </header>
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
