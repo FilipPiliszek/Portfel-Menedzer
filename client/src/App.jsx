@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import Register from './components/Register'; // 1. Musisz zaimportować nowy komponent
-import './App.css'
+import Register from './components/Register'; 
 
 function App() {
   // stan sesji
